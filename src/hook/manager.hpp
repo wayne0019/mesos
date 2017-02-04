@@ -76,6 +76,17 @@ public:
       const Option<Resources>& resources,
       const Option<std::map<std::string, std::string>>& env);
 
+  static void slavePostLaunchDockerHook(
+      const ContainerInfo& containerInfo,
+      const CommandInfo& commandInfo,
+      const Option<TaskInfo>& taskInfo,
+      const ExecutorInfo& executorInfo,
+      const std::string& containerName,
+      const std::string& sandboxDirectory,
+      const std::string& mappedDirectory,
+      const Option<Resources>& resources,
+      const Option<std::map<std::string, std::string>>& env);
+
   static void slavePostFetchHook(
       const ContainerID& containerId,
       const std::string& directory);

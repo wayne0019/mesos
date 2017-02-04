@@ -536,7 +536,7 @@ TEST_F(HealthCheckTest, ROOT_DOCKER_DockerHealthyTask)
   containerInfo.mutable_docker()->CopyFrom(dockerInfo);
 
   vector<TaskInfo> tasks = populateTasks(
-    "sleep 120", "exit 0", offers.get()[0], 0, None(), None(), containerInfo);
+    "sleep 10", "exit 0", offers.get()[0], 0, None(), None(), containerInfo);
 
   Future<ContainerID> containerId;
   EXPECT_CALL(containerizer, launch(_, _, _, _, _, _, _, _))

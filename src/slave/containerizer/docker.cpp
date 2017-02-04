@@ -1131,6 +1131,9 @@ Future<bool> DockerContainerizerProcess::_launch(
         return launchExecutorProcess(containerId);
       }))
       .then(defer(self(), [=](pid_t pid) {
+        return postLaunchDockerHook(containerId, pid, taskInfo, executorInfo, flags.sandbox_directory);
+      }))
+      .then(defer(self(), [=](pid_t pid) {
         return reapExecutor(containerId, pid);
       }));
   }
@@ -1177,9 +1180,62 @@ Future<bool> DockerContainerizerProcess::_launch(
       return checkpointExecutor(containerId, dockerContainer);
     }))
     .then(defer(self(), [=](pid_t pid) {
-      return reapExecutor(containerId, pid);
+      return postLaunchDockerHook(containerId, pid, taskInfo, executorInfo, flags.sandbox_directory);
+    }))
+    .then(defer(self(), [=](pid_t pid) {
+        return reapExecutorContainer(containerId, pid);
     }));
 }
+
+ Future<bool> DockerContainerizerProcess::reapExecutorContainer(
+     const ContainerID& containerId,
+     pid_t pid)
+ {
+   // After we do Docker::run we shouldn't remove a container until
+   // after we set 'status', which we do in this function.
+   CHECK(containers_.contains(containerId));
+ 
+   Container* container = containers_[containerId];
+ 
+   container->status.set(docker->wait(container->name()));
+ 
+   container->status.future().get()
+     .onAny(defer(self(), &Self::reaped, containerId));
+ 
+   //Option<Future<Nothing>> wait = docker->wait(container->name());
+   //wait->onAny(defer(self(), &Self::reaped, containerId));
+ 
+   return true;
+ }
+ 
+ Future<pid_t> DockerContainerizerProcess::postLaunchDockerHook(
+     const ContainerID& containerId,
+     pid_t pid,
+     const Option<TaskInfo>& taskInfo,
+     const ExecutorInfo& executorInfo,
+     const std::string& sandboxDirectory)
+ {
+   CHECK(containers_.contains(containerId));
+ 
+   Container* container = containers_[containerId];
+ 
+   if (HookManager::hooksAvailable()) {
+     HookManager::slavePostLaunchDockerHook(
+         container->container,
+         container->command,
+         taskInfo,
+         executorInfo,
+         container->name(),
+         container->directory,
+         sandboxDirectory,
+         container->resources,
+         container->environment);
+   }
+ 
+ 
+   return pid;
+ }
+ 
 
 
 Future<Docker::Container> DockerContainerizerProcess::launchExecutorContainer(
@@ -1439,6 +1495,8 @@ Future<Nothing> DockerContainerizerProcess::update(
     return Nothing();
   }
 
+  return docker->update(containers_[containerId]->name(), _resources);
+  /* using docker.update instead of change cgroup config manully.
   // Skip inspecting the docker container if we already have the pid.
   if (container->pid.isSome()) {
     return __update(containerId, _resources, container->pid.get());
@@ -1446,6 +1504,7 @@ Future<Nothing> DockerContainerizerProcess::update(
 
   return docker->inspect(containers_.at(containerId)->name())
     .then(defer(self(), &Self::_update, containerId, _resources, lambda::_1));
+  */
 #else
   return Nothing();
 #endif // __linux__
