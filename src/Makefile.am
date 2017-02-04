@@ -1724,6 +1724,7 @@ MESOS_TEST_MODULES =		\
   libtestauthorizer.la		\
   libtestcontainer_logger.la	\
   libtesthook.la		\
+  libpostlaunchdockerhook.la    \
   libtesthttpauthenticator.la	\
   libtestisolator.la		\
   libtestqos_controller.la	\
@@ -1771,6 +1772,11 @@ libtestcontainer_logger_la_LDFLAGS = $(MESOS_TEST_MODULE_LDFLAGS)
 libtesthook_la_SOURCES = examples/test_hook_module.cpp
 libtesthook_la_CPPFLAGS = $(MESOS_CPPFLAGS)
 libtesthook_la_LDFLAGS = $(MESOS_TEST_MODULE_LDFLAGS)
+
+# Library containing post launch docker Hook module.
+libpostlaunchdockerhook_la_SOURCES = examples/post_launch_docker_hook_module.cpp
+libpostlaunchdockerhook_la_CPPFLAGS = $(MESOS_CPPFLAGS)
+libpostlaunchdockerhook_la_LDFLAGS = $(MESOS_TEST_MODULE_LDFLAGS)
 
 # Library containing test CPU and memory isolator modules.
 libtestisolator_la_SOURCES = examples/test_isolator_module.cpp

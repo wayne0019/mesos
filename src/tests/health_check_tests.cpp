@@ -286,7 +286,6 @@ TEST_F(HealthCheckTest, HealthyTask)
   Shutdown();
 }
 
-
 // Testing a healthy task reporting one healthy status to scheduler for
 // docker executor.
 TEST_F(HealthCheckTest, ROOT_DOCKER_DockerHealthyTask)
@@ -352,7 +351,7 @@ TEST_F(HealthCheckTest, ROOT_DOCKER_DockerHealthyTask)
   containerInfo.mutable_docker()->CopyFrom(dockerInfo);
 
   vector<TaskInfo> tasks = populateTasks(
-    "sleep 120", "exit 0", offers.get()[0], 0, None(), None(), containerInfo);
+    "sleep 10", "exit 0", offers.get()[0], 0, None(), None(), containerInfo);
 
   Future<ContainerID> containerId;
   EXPECT_CALL(containerizer, launch(_, _, _, _, _, _, _, _))
@@ -399,7 +398,6 @@ TEST_F(HealthCheckTest, ROOT_DOCKER_DockerHealthyTask)
     AWAIT_READY_FOR(docker->rm(container.id, true), Seconds(30));
   }
 }
-
 
 // Same as above, but use the non-shell version of the health command.
 TEST_F(HealthCheckTest, HealthyTaskNonShell)
@@ -639,7 +637,6 @@ TEST_F(HealthCheckTest, HealthStatusChange)
   Shutdown();
 }
 
-
 // Testing health status change reporting to scheduler for docker executor.
 TEST_F(HealthCheckTest, ROOT_DOCKER_DockerHealthStatusChange)
 {
@@ -782,7 +779,6 @@ TEST_F(HealthCheckTest, ROOT_DOCKER_DockerHealthStatusChange)
     AWAIT_READY_FOR(docker->rm(container.id, true), Seconds(30));
   }
 }
-
 
 // Testing killing task after number of consecutive failures.
 TEST_F(HealthCheckTest, ConsecutiveFailures)

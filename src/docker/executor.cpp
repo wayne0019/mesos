@@ -151,12 +151,19 @@ public:
         Subprocess::FD(STDOUT_FILENO),
         Subprocess::FD(STDERR_FILENO));
 
+    std::cout << "DockerExecutorProcess::launchTask::docker->run" << std::endl;
+
     run->onAny(defer(self(), &Self::reaped, driver, lambda::_1));
+
+    std::cout << "DockerExecutorProcess::launchTask::run->onAny" << std::endl;
 
     // Delay sending TASK_RUNNING status update until we receive
     // inspect output.
     inspect = docker->inspect(containerName, DOCKER_INSPECT_DELAY)
       .then(defer(self(), [=](const Docker::Container& container) {
+        std::cout
+        << "DockerExecutorProcess::launchTask::inspect.then"
+        << std::endl;
         if (!killed) {
           TaskStatus status;
           status.mutable_task_id()->CopyFrom(taskId.get());
@@ -183,6 +190,11 @@ public:
 
         return Nothing();
       }));
+
+
+    std::cout
+    << "DockerExecutorProcess::launchTask::after inspect"
+    << std::endl;
 
     inspect.onReady(
         defer(self(), &Self::launchHealthCheck, containerName, task));
@@ -279,15 +291,23 @@ private:
       ExecutorDriver* _driver,
       const Future<Nothing>& run)
   {
+    std::cout << "DockerExecutorProcess:reaped" << std::endl;
     // Wait for docker->stop to finish, and best effort wait for the
     // inspect future to complete with a timeout.
     stop.onAny(defer(self(), [=](const Future<Nothing>&) {
+      std::cout << "DockerExecutorProcess:reaped::stop" << std::endl;
       inspect
         .after(DOCKER_INSPECT_TIMEOUT, [=](const Future<Nothing>&) {
+          std::cout
+          << "DockerExecutorProcess:reaped::inspect.after"
+          << std::endl;
           inspect.discard();
           return inspect;
         })
         .onAny(defer(self(), [=](const Future<Nothing>&) {
+          std::cout
+          << "DockerExecutorProcess:reaped::inspect.onAny"
+          << std::endl;
           CHECK_SOME(driver);
           TaskState state;
           string message;
@@ -331,6 +351,7 @@ private:
 
   void launchHealthCheck(const string& containerName, const TaskInfo& task)
   {
+    std::cout << "DockerExecutorProcess::launchHealthCheck" << std::endl;
     if (!killed && task.has_health_check()) {
       HealthCheck healthCheck = task.health_check();
 

@@ -197,6 +197,21 @@ public:
     return os::touch(sandboxDirectory + "/foo");
   }
 
+  virtual Try<Nothing> slavePostLaunchDockerHook(
+      const ContainerInfo& containerInfo,
+      const CommandInfo& commandInfo,
+      const Option<TaskInfo>& taskInfo,
+      const ExecutorInfo& executorInfo,
+      const string& name,
+      const string& sandboxDirectory,
+      const string& mappedDirectory,
+      const Option<Resources>& resources,
+      const Option<map<string, string>>& env)
+  {
+    LOG(INFO) << "Executing 'slavePostLaunchDockerHook'";
+    return os::touch("/tmp/foo.post");
+  }
+
 
   // This hook locates the file created by environment decorator hook
   // and deletes it.
