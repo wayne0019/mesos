@@ -165,7 +165,6 @@ slave::Flags MesosTest::CreateSlaveFlags()
   // Create a temporary work directory (removed by Environment).
   Try<string> directory = environment->mkdtemp();
   CHECK_SOME(directory) << "Failed to create temporary directory";
-
   flags.work_dir = directory.get();
   flags.fetcher_cache_dir = path::join(directory.get(), "fetch");
 

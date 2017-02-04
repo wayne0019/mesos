@@ -288,6 +288,36 @@ void HookManager::slavePreLaunchDockerHook(
   }
 }
 
+void HookManager::slavePostLaunchDockerHook(
+    const ContainerInfo& containerInfo,
+    const CommandInfo& commandInfo,
+    const Option<TaskInfo>& taskInfo,
+    const ExecutorInfo& executorInfo,
+    const string& containerName,
+    const string& sandboxDirectory,
+    const string& mappedDirectory,
+    const Option<Resources>& resources,
+    const Option<map<string, string>>& env)
+{
+  foreach (const string& name, availableHooks.keys()) {
+    Hook* hook = availableHooks[name];
+    Try<Nothing> result =
+      hook->slavePostLaunchDockerHook(
+          containerInfo,
+          commandInfo,
+          taskInfo,
+          executorInfo,
+          containerName,
+          sandboxDirectory,
+          mappedDirectory,
+          resources,
+          env);
+    if (result.isError()) {
+      LOG(WARNING) << "Slave post launch docker hook failed for module '"
+                   << name << "': " << result.error();
+    }
+  }
+}
 
 void HookManager::slavePostFetchHook(
     const ContainerID& containerId,

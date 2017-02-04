@@ -920,6 +920,118 @@ Future<Nothing> Docker::kill(
   return checkError(cmd, s.get());
 }
 
+Future<Nothing> Docker::update(
+    const string& containerName,
+    const Option<mesos::Resources>& resources) const
+{
+  if (resources.isSome()) {
+    vector<string> argv;
+    argv.push_back(path);
+    argv.push_back("-H");
+    argv.push_back(socket);
+    argv.push_back("update");
+
+    Option<double> cpus = resources.get().cpus();
+    if (cpus.isSome()) {
+      uint64_t cpuShare =
+        std::max((uint64_t) (CPU_SHARES_PER_CPU * cpus.get()), MIN_CPU_SHARES);
+      argv.push_back("--cpu-shares");
+      argv.push_back(stringify(cpuShare));
+    }
+
+    Option<Bytes> mem = resources.get().mem();
+    if (mem.isSome()) {
+      Bytes memLimit = std::max(mem.get(), MIN_MEMORY);
+      argv.push_back("--memory");
+      argv.push_back(stringify(memLimit.bytes()));
+      argv.push_back("--memory-swap");
+      argv.push_back(stringify(memLimit.bytes()*2));
+    }
+
+    argv.push_back(containerName);
+
+    string cmd = strings::join(" ", argv);
+
+    VLOG(1) << "Running " << cmd;
+    std::cout << "Running " << cmd << std::endl;
+
+    Try<Subprocess> s = subprocess(
+        cmd,
+        Subprocess::PATH("/dev/null"),
+        Subprocess::PATH("/dev/null"),
+        Subprocess::PIPE());
+
+    if (s.isError()) {
+      return Failure(s.error());
+    }
+
+    return checkError(cmd, s.get());
+  } else {
+    return Nothing();
+  }
+}
+
+Future<Option<int> > Docker::wait(
+    const string& containerName) const
+{
+    Owned<Promise<Option<int> > > promise(new Promise<Option<int> >());
+
+    vector<string> argv;
+    argv.push_back(path);
+    argv.push_back("-H");
+    argv.push_back(socket);
+    argv.push_back("wait");
+    argv.push_back(containerName);
+
+    string cmd = strings::join(" ", argv);
+
+    VLOG(1) << "Running " << cmd;
+    std::cout << "Running " << cmd << std::endl;
+    _wait(cmd, promise);
+
+    return promise->future();
+}
+
+void Docker::_wait(
+    const string& cmd,
+    const Owned<Promise<Option<int> > >& promise)
+{
+    Try<Subprocess> s = subprocess(
+        cmd,
+        Subprocess::PATH("/dev/null"),
+        Subprocess::PATH("/dev/null"),
+        Subprocess::PIPE());
+
+    if (s.isError()) {
+      promise->fail(s.error());
+      return;
+    }
+
+    s.get().status()
+      .onAny([=]() { __wait(cmd, promise, s.get()); });
+}
+
+void Docker::__wait(
+    const string& cmd,
+    const Owned<Promise<Option<int> > >& promise,
+    const Subprocess& s)
+{
+    if (promise->future().hasDiscard()) {
+      promise->discard();
+      return;
+    }
+
+    // Check the exit status of 'docker inspect'.
+    CHECK_READY(s.status());
+
+    Option<int> status = s.status().get();
+
+    if (!status.isSome()) {
+      promise->fail("No status found from '" + cmd + "'");
+    } else {
+      promise->set(status);
+    }
+}
 
 Future<Nothing> Docker::rm(
     const string& containerName,

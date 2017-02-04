@@ -146,6 +146,23 @@ public:
     return Nothing();
   }
 
+  // This hook is called from within slave after docker is launched.
+  // A typical module implementing the hook will perform some settings
+  // as required.
+  virtual Try<Nothing> slavePostLaunchDockerHook(
+      const ContainerInfo& containerInfo,
+      const CommandInfo& commandInfo,
+      const Option<TaskInfo>& taskInfo,
+      const ExecutorInfo& executorInfo,
+      const std::string& name,
+      const std::string& sandboxDirectory,
+      const std::string& mappedDirectory,
+      const Option<Resources>& resources,
+      const Option<std::map<std::string, std::string>>& env)
+  {
+    return Nothing();
+  }
+
 
   // This hook is called from within slave when an executor is being
   // removed. A typical module implementing the hook will perform some
